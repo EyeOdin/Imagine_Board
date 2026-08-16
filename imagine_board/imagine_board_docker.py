@@ -42,13 +42,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from .imagine_board_constants import *
 from .imagine_board_calculations import *
 from .imagine_board_extension import ImagineBoard_Extension
-from .imagine_board_modulo import (
-    ImagineBoard_Preview,
-    ImagineBoard_Grid,
-    ImagineBoard_Reference,
-    List_Data,
-    Drive_TreeView,
-    )
+from .imagine_board_modulo import *
 
 #endregion
 
@@ -418,8 +412,9 @@ class ImagineBoard_Docker( DockWidget ):
         self.Style_Theme()
     def Extension( self ):
         # Install Extension for Docker
-        extension = ImagineBoard_Extension( parent = Krita.instance() )
-        Krita.instance().addExtension( extension )
+        ki = Krita.instance()
+        extension = ImagineBoard_Extension( parent = ki )
+        ki.addExtension( extension )
         # Connect Extension Signals
         extension.SIGNAL_BROWSE.connect( self.Shortcut_Browse )
         extension.SIGNAL_FRAME.connect( self.Shortcut_Frame )
@@ -871,13 +866,19 @@ class ImagineBoard_Docker( DockWidget ):
         # Colors
         win = palette.window().color().getHsvF()
         hue = palette.highlight().color().getHsvF()
-        m2 = +0.03; m3 = -0.03
+        luma = self.Color_Luma( palette.highlight().color() )
+        m2 = +0.03
+        m3 = -0.03
         if win[2] > 0.5:    d2 = +0.20; d3 = -0.05; t3 = -0.30 # Light Theme
         else:               d2 = +0.10; d3 = +0.10; t3 = +0.30 # Dark Theme
+        if luma > 0.6:  f4 = 0.0
+        else:           f4 = 1.0
+        # Hex Codes
         backdrop = QColor().fromHsvF( win[0], win[1] + 0,  win[2] - 0.05 ).name()
         menu     = QColor().fromHsvF( hue[0], win[1] + m2, win[2] + m3 ).name()
         dim      = QColor().fromHsvF( hue[0], win[1] + d2, win[2] + d3 ).name()
         text     = QColor().fromHsvF( win[0], win[1] + 0,  win[2] + t3 ).name()
+        folder   = QColor().fromHsvF( win[0], 0, f4 ).name()
 
         # Self Variables
         self.w_light    = w_light
@@ -887,7 +888,7 @@ class ImagineBoard_Docker( DockWidget ):
 
         # Modules
         self.panel_preview.Set_Theme( w_light, w_window, c_highlight, t_button )
-        self.panel_grid.Set_Theme( w_light, w_window, c_highlight, c_link )
+        self.panel_grid.Set_Theme( w_light, w_window, c_highlight, c_link, folder )
         self.panel_reference.Set_Theme( w_light, w_window, c_highlight, c_link )
 
         # Layout
@@ -980,6 +981,16 @@ class ImagineBoard_Docker( DockWidget ):
         style_sheet += "QSlider::sub-page:horizontal { background-color: " + page_sub + "; }" # Left Side
         style_sheet += "QSlider::add-page:horizontal { background-color: " + page_add + "; }" # Right Side
         return style_sheet
+
+    # Themes
+    def Color_Luma( self, qcolor ):
+        r = qcolor.redF()
+        g = qcolor.greenF()
+        b = qcolor.blueF()
+        luma = ( 0.2126 * r ) + ( 0.7152 * g ) + ( 0.0722 * b ) # Rec. 709
+        if luma <= 0.0: luma = 0.0
+        if luma >= 1.0: luma = 1.0
+        return luma
 
     #endregion
     #region Interface Dialog
@@ -1311,6 +1322,14 @@ class ImagineBoard_Docker( DockWidget ):
         if frame < 0:
             self.Preview_Back()
 
+    # Troubleshooting
+    def Inspect( self ):
+        functions = list()
+        ins = inspect.stack()
+        for item in ins:
+            functions.append( item[3] )
+        QtCore.qDebug( f"Inspect = { functions }" )
+
     #endregion
     #region API
 
@@ -1352,7 +1371,7 @@ class ImagineBoard_Docker( DockWidget ):
             else:
                 # Menu
                 qmenu = QMenu( self )
-                qmenu.setMinimumWidth( 8 * len( self.folder_url ) )
+                qmenu.setMinimumWidth( 7 * len( self.folder_url ) )
                 # Title
                 qmenu.addSection( self.folder_url )
                 # Parent Dir
@@ -1412,7 +1431,7 @@ class ImagineBoard_Docker( DockWidget ):
                 self.Folder_Shift( folder_url )
                 self.Watcher_Update()
             else:
-                self.folder_url = ""
+                self.folder_url = str()
             # Save
             Kritarc_Write( DOCKER_NAME, "folder_url", self.folder_url )
     def Folder_Lock( self ):
@@ -1429,7 +1448,7 @@ class ImagineBoard_Docker( DockWidget ):
         self.search_string = self.layout.search.text().lower()
         self.Filter_Files( self.search_string, None, 0 )
         Kritarc_Write( DOCKER_NAME, "search", self.search_string )
-    def Filter_Files( self, search, file_name=None, file_index=None ):
+    def Filter_Files( self, search, file_name, file_index ):
         try:
             # Watcher
             try:self.qtimer_watcher.stop()
@@ -1437,7 +1456,7 @@ class ImagineBoard_Docker( DockWidget ):
 
             # Variables
             str_list = self.sync_list
-            location = ""
+            location = str()
             str_search = search
 
             # Time Watcher
@@ -1474,8 +1493,11 @@ class ImagineBoard_Docker( DockWidget ):
                 self.Index_Range( 0, 0 )
 
             # Update List and Display
-            if   file_name  != None:    self.Display_String( file_name )
-            elif file_index != None:    self.Display_Number( file_index )
+            index = self.Filter_String( file_name )
+            if index == None:
+                index = file_index
+            index = Limit_Range( index, 0, self.preview_max - 1 )
+            self.Display_Number( index )
 
             # Time Watcher
             time = QtCore.QTime( 0,0 ).addMSecs( start.msecsTo( QtCore.QDateTime.currentDateTimeUtc() ) )
@@ -1485,6 +1507,15 @@ class ImagineBoard_Docker( DockWidget ):
     def Filter_Null( self ):
         self.Index_Range( 0, 0 )
         self.Index_Values( 0 )
+    def Filter_String( self, file_name ):
+        index = None
+        for i in range( 0, len( self.list_url ) ):
+            url = self.list_url[i]
+            basename = os.path.basename( url )
+            if basename == file_name:
+                index = i
+                break
+        return index
 
     # Search
     def Search_Completer( self, search_string ):
@@ -1801,18 +1832,12 @@ class ImagineBoard_Docker( DockWidget ):
             check_pdf = False
             check_comp = zipfile.is_zipfile( url ) == True
             if check_comp == False:
-                if check_read == True and check_anim == False:
-                    state = "IMG"
-                elif check_read == True and check_anim == True:
-                    state = "ANIM"
-                elif check_read == True and check_pdf == True:
-                    state = "PDF"
-            elif check_comp == True:
-                state = "COMP"
-        elif os.path.isdir( url ) == True:
-            state = "DIR"
-        elif Check_Html( url ) == True:
-            state = "WEB"
+                if check_read == True and check_anim == False:      state = "IMG"
+                elif check_read == True and check_anim == True:     state = "ANIM"
+                elif check_read == True and check_pdf == True:      state = "PDF"
+            elif check_comp == True:                                state = "COMP"
+        elif os.path.isdir( url ) == True:                          state = "DIR"
+        elif Check_Html( url ) == True:                             state = "WEB"
         # Widgets
         self.PreviewControl_Control( state )
         self.Style_PreviewControl( state )
@@ -1837,13 +1862,9 @@ class ImagineBoard_Docker( DockWidget ):
         self.Index_Values( index )
         self.Display_Update( False )
     def Display_String( self, file_name ):
-        index = 0
-        for i in range( 0, len( self.list_url ) ):
-            url = self.list_url[i]
-            basename = os.path.basename( url )
-            if basename == file_name:
-                index = i
-                break
+        index = self.Filter_String( file_name )
+        if index == None:
+            index = 0
         self.Index_Name( index )
         self.Index_Values( index )
         self.Display_Update( True )
@@ -1865,14 +1886,14 @@ class ImagineBoard_Docker( DockWidget ):
     def Display_Preview( self, update ):
         if self.file_found == True:
             self.Index_Name( self.preview_index )
-            self.panel_preview.Preview_Path( self.list_url[ self.preview_index ], self.preview_state, update )
+            self.panel_preview.Preview_Path( self.list_url[ self.preview_index ], self.preview_index, self.preview_state, update )
         else:
             self.Index_Name( None )
             self.panel_preview.Preview_Default()
     def Display_Grid( self, update ):
         if self.file_found == True:
             self.Index_Name( self.preview_index )
-            self.panel_grid.Grid_Line( self.preview_index, self.list_url, update )
+            self.panel_grid.Grid_Line( self.list_url, self.preview_index, update )
         else:
             self.Index_Name( None )
             self.panel_grid.Grid_Default()
@@ -2339,10 +2360,19 @@ class ImagineBoard_Docker( DockWidget ):
 
     # Context Menu
     def Bookmark_Menu( self ):
+        # Variables
+        check_bookmark = self.folder_url in self.bookmark_list
         # QMenu
         qmenu = QMenu( self )
+        qmenu.setMinimumWidth( 7 * len( self.folder_url ) )
+        # Title
+        qmenu.addSection( self.folder_url )
+        # Actions
         action_bookmark_save = qmenu.addAction( "Save" )
         action_bookmark_delete = qmenu.addAction( "Delete")
+        # State
+        if check_bookmark == True: action_bookmark_save.setEnabled( False )
+        if check_bookmark == False:  action_bookmark_delete.setEnabled( False )
         # Geometry
         geo = self.layout.bookmark_open.geometry()
         qpoint = geo.bottomLeft()
@@ -2367,7 +2397,7 @@ class ImagineBoard_Docker( DockWidget ):
             self.Bookmark_ComboBox( self.bookmark_list )
             self.layout.bookmark_entries.setCurrentText( os.path.basename( self.folder_url ) )
     def Bookmark_Delete( self ):
-        index = self.layout.bookmark_entries.currentIndex()
+        index = self.bookmark_list.index( self.folder_url )
         if index >= 0:
             self.bookmark_list.pop( index )
             self.Bookmark_ComboBox( self.bookmark_list )
@@ -2866,6 +2896,7 @@ class ImagineBoard_Docker( DockWidget ):
         self.drive_tree_view.setObjectName( "tree_view" )
         self.dialog.tab_drive_layout.addWidget( self.drive_tree_view )
         # Widget Settings
+        self.drive_tree_view.setFont( QFont( "Consolas", 10 ) )
         self.drive_tree_view.setFocusPolicy( Qt.NoFocus )
         self.drive_tree_view.setAcceptDrops( True )
         self.drive_tree_view.setFrameShape( QFrame.NoFrame )
@@ -2880,6 +2911,7 @@ class ImagineBoard_Docker( DockWidget ):
         self.drive_tree_view.setAlternatingRowColors( True )
         self.drive_tree_view.setSelectionMode( QAbstractItemView.ExtendedSelection )
         self.drive_tree_view.setSortingEnabled( True )
+        self.drive_tree_view.setStyleSheet( "#tree_view::item{ padding: 1px 0; }" )
         # Model View
         self.Drive_Tree_View()
         # Event Filters
@@ -2893,24 +2925,33 @@ class ImagineBoard_Docker( DockWidget ):
         self.drive_tree_view.sortByColumn( 0, Qt.SortOrder.AscendingOrder )
         self.drive_tree_view.setModel( self.drive_model )
         self.drive_tree_view.setRootIndex( self.drive_model.index( self.drive_url ) )
-        self.drive_tree_view.setColumnWidth( 0, 300 )
+        self.drive_tree_view.setColumnWidth( 0, 450 )
 
     # Signals
     def Drive_Click( self, url ):
-        try:QtCore.qDebug( f"url = { url.data() }" )
-        except:QtCore.qDebug( f"url = { url }" )
+        # try:    QtCore.qDebug( f"url = { url.data() }" )
+        # except: QtCore.qDebug( f"url = { url }" )
+        pass
     def Drive_Menu( self, event ):
         # Variables
         model_index = self.drive_tree_view.currentIndex()
         path = os.path.normpath( self.drive_model.filePath( model_index ) )
         if os.path.isfile( path ) == True:  directory = os.path.dirname( path )
         else:                               directory = path
+        item = os.path.basename( directory )
         # Menu
         qmenu = QMenu( self )
-        action_move = qmenu.addAction( f"Move Selected to [ { os.path.basename( directory ) } ]" )
+        action_move     = qmenu.addAction( f"Move Selected to [ { item } ]" )
+        qmenu.addSeparator()
+        action_rename   = qmenu.addAction( "Rename" )
+        action_new      = qmenu.addAction( "New Folder" )
+        qmenu.addSeparator()
+        action_trash    = qmenu.addAction( "Trash" )
         action = qmenu.exec_( self.drive_tree_view.mapToGlobal( event.pos() ) )
-        if action == action_move:
-            self.Drive_Move( directory )
+        if action == action_move:       self.Drive_Move( directory )
+        if action == action_rename:     self.Drive_Rename( path )
+        if action == action_new:        self.Drive_New( path )
+        if action == action_trash:      self.Drive_Trash( path )
     # Actions
     def Drive_Move( self, directory ):
         # Variables
@@ -2925,10 +2966,10 @@ class ImagineBoard_Docker( DockWidget ):
             source_basename = os.path.basename( source_url )
             destination_url = os.path.normpath( os.path.join( directory, source_basename ) )
             destination_basename = os.path.basename( destination_url )
-            check_exists = os.path.exists( destination_url )
+            check_exist = os.path.exists( destination_url )
             # File
             qfile = QFile( source_url )
-            if check_exists == True:
+            if check_exist == True:
                 # Pixmaps
                 qis = QPixmap( source_url ).scaled( 200, 200, Qt.KeepAspectRatio, Qt.FastTransformation )
                 qid = QPixmap( destination_url ).scaled( 200, 200, Qt.KeepAspectRatio, Qt.FastTransformation )
@@ -2965,7 +3006,7 @@ class ImagineBoard_Docker( DockWidget ):
             del qfile
         # Refresh
         if self.mode_index in [ 0, 1 ]:
-            preview_index = Limit_Range( preview_index + 1, 0, self.preview_max - 1 )
+            preview_index = Limit_Range( preview_index, 0, self.preview_max - 1 )
             self.Filter_Files( self.search_string, None, preview_index )
         if self.mode_index == 2:
             self.panel_reference.Board_Refresh()
@@ -2983,8 +3024,8 @@ class ImagineBoard_Docker( DockWidget ):
             if len_split == 2:
                 destination_url += "." + split[1]
             # Check
-            check_exists = os.path.exists( destination_url )
-            if check_exists == False:
+            check_exist = os.path.exists( destination_url )
+            if check_exist == False:
                 break
         # Return
         return destination_url
@@ -2992,6 +3033,46 @@ class ImagineBoard_Docker( DockWidget ):
         boolean = qfile.rename( destination_url )
         if boolean == True: Message_Log( "MOVE", destination_url )
         else:               Message_Log( "ERROR", destination_url )
+    def Drive_Rename( self, url_old ):
+        # Input
+        directory, basename, name, extension = self.Path_Components( url_old )
+        new_name, ok = QInputDialog.getText( self, "Rename", name, QLineEdit.Normal, name, Qt.Dialog, Qt.ImhNone )
+        # Strings
+        url_new = os.path.normpath( os.path.join( directory, new_name + extension ) )
+        # Rename
+        check_exist = os.path.exists( url_new ) == False
+        check_url = url_old != url_new
+        if check_exist == True and check_url == True and url_new != None:
+            qfile = QFile( url_old )
+            boolean = qfile.rename( url_new )
+            if boolean == True:
+                string = f" | RENAME { os.path.basename( url_old ) } >> { os.path.basename( url_new ) }"
+                try:QtCore.qDebug( string )
+                except:pass
+            del qfile
+    def Drive_New( self, url ):
+        # Check
+        check_file = os.path.isfile( url )
+        check_directory = os.path.isdir( url )
+        if   check_file == True:        url_directory = os.path.dirname( url )
+        elif check_directory == True:   url_directory = url
+        # Input
+        directory, basename, name, extension = self.Path_Components( url_directory )
+        new_name, ok = QInputDialog.getText( self, "New Folder", "Name:", QLineEdit.Normal, "New Folder", Qt.Dialog, Qt.ImhNone )
+        # Strings
+        url_new = os.path.normpath( os.path.join( url_directory, new_name ) )
+        # New Folder
+        check_exist = os.path.exists( url_new ) == False
+        if ok == True and check_exist == True:
+            qdir = QDir( url_directory )
+            boolean = qdir.mkdir( new_name )
+            if boolean == True:
+                string = f" | NEW FOLDER { os.path.basename( url_new ) }"
+                try:QtCore.qDebug( string )
+                except:pass
+            del qdir
+    def Drive_Trash( self, url ):
+        File_Move_Trash( [ url ] )
 
     #endregion
     #region Watcher
@@ -3001,13 +3082,10 @@ class ImagineBoard_Docker( DockWidget ):
         # Delete Previous instance in multiple calls cases
         try:self.qtimer_watcher.stop()
         except:pass
-        # Progress Bar
-        # self.ProgressBar_Value( 0 )
-        # self.ProgressBar_Maximum( 0 )
         # Create new Instance to Update
         try:
             self.qtimer_watcher = QTimer( self )
-            self.qtimer_watcher.timeout.connect( lambda:self.Filter_Files( self.search_string, self.preview_name, None ) )
+            self.qtimer_watcher.timeout.connect( lambda: self.Filter_Files( self.search_string, self.preview_name, self.preview_index ) )
             self.qtimer_watcher.start( 2000 )
         except Exception as e:
             self.Filter_Search()
@@ -3545,10 +3623,10 @@ class Worker_Cycle( QtCore.QObject ):
                 # Variables
                 underscore = "_"
                 # Checks
-                check_exists = os.path.exists( url_new ) == False
+                check_exist = os.path.exists( url_new ) == False
                 check_url = url_old != url_new
                 # Rename
-                if check_exists == True and check_url == True:
+                if check_exist == True and check_url == True:
                     boolean = self.qfile.rename( url_old, url_new )
                     if boolean == True:
                         # Variables
@@ -3874,53 +3952,20 @@ Known Krita Bugs:
 - Krita does not allow "Promoted Widgets" so you need to construct the widget via script
 - Signals interupt worker progress_bar
 
-Bugs:
-- not isn't a searchable word. alternative "!"
-- Drive does nothing usefull really
-
 ToDo:
 - Grid Selection menu operations: Stitcher
 - Send or copy Board from EO to KRA and vice-versa
 - qpixmap.createMaskFromColor(  )
 - Reference Rebase does not Repalce images
 
-Testes:
-- EO file
-- KRA file
-- new menus for Lock
-
 New:
-- Color Picker is a button now
-- Color Analyze is inside Color menu
-- Grid Mode refactored
-- Small Browsing Tweaks
-- Footer UI refactor
-- Preview Information can expose the compressed file name and the name of the image inside it too
-- Drive Tree View Explorer
-- Bug Fix: operation Python Script for Keyenter
-- watcher permanance fixed
-- frame extension shortcut
-- better filtering and sorting
-- I must warn People: variables names changed delete kritarc
-- Overlay Grid Lines
-- Overlay Background Color
-- Pixelated display ( preview limitation )
-- Precache returns and works with a memory size limit
-- New Slideshow math and button
-- Grid selections
-- Display and Openning Folders
-- Information improvements
-- Theme corrections
-- Packer Corrections ( faster packing optimal )
-- Reference Board Loads and Saves dont corrupt data by multi access
-- Load and Lock buttons react with click and hold click. no RMB required.
-- Folder Searches are Abortable
-- Reorder Operations: File Rename, Zip Rename and Web Download
-- Grid Bookmarks
-- Modify images:
-    - Fix Images ( Grayscale images are wrong to be sRGB ? )
-    - Pre Multiply Images
-- Display Bundle files
-- Reference now handles its own memory and files
-- Send Files to Pigmento Sampler to have a LUT applied to it
+- Trash files
+- Drive text formating
+- Drive can:
+    - Rename Files/Folders
+    - Create Folders
+    - Trash Files/Folders
+- removed +1 from index when moving files becauase how index is handled when finding files
+- swapped vertical input to Preview Ctrl+LMB hold pagination
+- Bookmark tweaks on menu
 """
