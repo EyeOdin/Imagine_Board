@@ -370,6 +370,7 @@ class ImagineBoard_Docker( DockWidget ):
         self.panel_preview.PREVIEW_PC_MAX.connect( self.PreviewControl_Slider_Maximum )
         self.panel_preview.PREVIEW_PB_VALUE.connect( self.ProgressBar_Value )
         self.panel_preview.PREVIEW_PB_MAX.connect( self.ProgressBar_Maximum )
+        self.panel_preview.PREVIEW_UPDATE.connect( self.Filter_Update )
 
         #endregion
         #region Grid
@@ -388,6 +389,7 @@ class ImagineBoard_Docker( DockWidget ):
         # UI
         self.panel_grid.GRID_PB_VALUE.connect( self.ProgressBar_Value )
         self.panel_grid.GRID_PB_MAX.connect( self.ProgressBar_Maximum )
+        self.panel_grid.GRID_UPDATE.connect( self.Filter_Update )
 
         #endregion
         #region Reference
@@ -1444,6 +1446,8 @@ class ImagineBoard_Docker( DockWidget ):
         return locked
 
     # Filter
+    def Filter_Update( self ):
+        self.Filter_Files( self.search_string, None, self.preview_index )
     def Filter_Search( self ):
         self.search_string = self.layout.search.text().lower()
         self.Filter_Files( self.search_string, None, 0 )

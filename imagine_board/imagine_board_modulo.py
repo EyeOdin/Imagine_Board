@@ -774,6 +774,7 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
     PREVIEW_PC_MAX = QtCore.pyqtSignal( int )
     PREVIEW_PB_VALUE = QtCore.pyqtSignal( int )
     PREVIEW_PB_MAX = QtCore.pyqtSignal( int )
+    PREVIEW_UPDATE = QtCore.pyqtSignal()
 
     # Init
     def __init__( self, parent ):
@@ -1346,6 +1347,7 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
             File_Copy_Image( self.preview_url )
         if action == action_file_trash:
             File_Move_Trash( [ self.preview_url ] )
+            self.PREVIEW_UPDATE.emit()
         # Animation
         if action == action_anim_export_one:
             self.Anim_Export_One()
@@ -2095,6 +2097,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
     # Ui
     GRID_PB_VALUE = QtCore.pyqtSignal( int )
     GRID_PB_MAX = QtCore.pyqtSignal( int )
+    GRID_UPDATE = QtCore.pyqtSignal()
 
     # Init
     def __init__( self, parent ):
@@ -2723,6 +2726,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
                 File_Copy_Image( url )
             if action == action_file_trash:
                 File_Move_Trash( list_url )
+                self.GRID_UPDATE.emit()
             # Color
             if action == action_color_analyse:
                 qimage = qpixmap.toImage()
