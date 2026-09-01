@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ActionCollection version="2" name="Scripts">
+    <Actions category="Scripts">
+        <text>Tela</text>
+
+        <!-- ToolBox Tools -->
+        <Action name="tela_extension_tool1_vector">
+          <icon></icon>
+          <text>Tool1 Vector</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_tool2_brush">
+          <icon></icon>
+          <text>Tool2 Brush</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_tool3_transform">
+          <icon></icon>
+          <text>Tool3 Transform</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_tool4_color">
+          <icon></icon>
+          <text>Tool4 Color</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_tool5_overlay">
+          <icon></icon>
+          <text>Tool5 Overlay</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_tool6_select">
+          <icon></icon>
+          <text>Tool6 Select</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_tool7_camera">
+          <icon></icon>
+          <text>Tool7 Camera</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+
+        <!-- Radial Menu -->
+        <Action name="tela_extension_shelf_action">
+          <icon></icon>
+          <text>Shelf Action</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+
+        <!-- Resources -->
+        <Action name="tela_extension_shelf_resource_preset">
+          <icon></icon>
+          <text>Shelf Resource Preset</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+
+        <!-- Mirror Fix -->
+        <Action name="tela_extension_mirror_fix_left">
+          <icon></icon>
+          <text>Mirror Fix [LEFT]</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_mirror_fix_right">
+          <icon></icon>
+          <text>Mirror Fix [RIGHT]</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_mirror_fix_top">
+          <icon></icon>
+          <text>Mirror Fix [TOP]</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+        <Action name="tela_extension_mirror_fix_down">
+          <icon></icon>
+          <text>Mirror Fix [DOWN]</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+
+        <!-- Color Picker -->
+        <Action name="tela_extension_picker_to_cursor">
+          <icon></icon>
+          <text>Picker to Cursor</text>
+          <whatsThis></whatsThis>
+          <toolTip></toolTip>
+          <iconText></iconText>
+          <activationFlags></activationFlags>
+          <activationConditions></activationConditions>
+          <shortcut>none</shortcut>
+          <isCheckable>false</isCheckable>
+          <statusTip></statusTip>
+        </Action>
+
+
+    </Actions>
+</ActionCollection>

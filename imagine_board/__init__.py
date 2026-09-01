@@ -1,5 +1,5 @@
-# Imagine Board is a Krita plugin to displays and organizes images.
-# Copyright (C) 2022  Ricardo Jeremias.
+# Tela is a Krita plugin for a Canvas Tool Box
+# Copyright (C) 2021  Ricardo Jeremias.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
 
 # Imports
 from krita import *
-from .imagine_board_extension import *
-from .imagine_board_docker import *
+from .tela_extension import *
 
 
 # Information
@@ -29,5 +28,6 @@ __email__ = ' jeremy6321478@gmail.com '
 __url__ = ' https://github.com/EyeOdin '
 
 
-# Register Krita Docker
-Application.addDockWidgetFactory( DockWidgetFactory( "pykrita_imagine_board_docker", DockWidgetFactoryBase.DockRight, ImagineBoard_Docker ) )
+# Register Krita Extension
+ki = Krita.instance()
+ki.addExtension( Tela_Extension( ki ) )
