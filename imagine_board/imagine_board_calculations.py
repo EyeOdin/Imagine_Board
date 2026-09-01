@@ -66,41 +66,27 @@ def Message_Error( error="null image" ):
 #region Limiters
 
 def Limit_Float( value ):
-    if value <= 0:
-        value = 0
-    if value >= 1:
-        value = 1
+    value = max( value, 0 )
+    value = min( value, 1 )
     return value
 def Limit_Range( value, minimum, maximum ):
-    if value <= minimum:
-        value = minimum
-    if value >= maximum:
-        value = maximum
+    value = max( value, minimum )
+    value = min( value, maximum )
     return value
 def Limit_Loop( value, limit ):
-    if value < 0:
-        value = limit
-    if value > limit:
-        value = 0
+    if value < 0:       value = limit
+    if value > limit:   value = 0
     return value
 def Limit_Looper( value, limit ):
-    while value < 0:
-        value += limit
-    while value > limit:
-        value -= limit
+    while value < 0:        value += limit
+    while value > limit:    value -= limit
     return value
 def Limit_Angle( angle, inter ):
     angle = angle // inter
     even = angle % 2
-    if even == 0: # Even
-        angle = angle * inter
-    else: # Odd
-        angle = ( angle + 1 ) * inter
+    if even == 0:   angle = angle * inter # Even
+    else:           angle = ( angle + 1 ) * inter # Odd
     return angle
-def Limit_Mini( value, minimum ):
-    if value <= minimum:
-        value = minimum
-    return value
 
 #endregion
 #region Range

@@ -382,10 +382,12 @@ def File_Open_Location( url ):
         Message_Log( "ERROR", "not able to access location" )
 def File_Copy_Path( url ):
     url = os.path.normpath( url )
+    File_Copy_Text( url )
+def File_Copy_Text( text ):
     clipboard = QApplication.clipboard()
     clipboard.clear()
-    clipboard.setText( url )
-    Message_Log( "COPY PATH", f"{ url }" )
+    clipboard.setText( text )
+    Message_Log( "TEXT to CLIPBOARD", f"{ text }" )
 def File_Copy_Image( url ):
     url = os.path.normpath( url )
     qpixmap = QPixmap( url )
@@ -393,7 +395,7 @@ def File_Copy_Image( url ):
     clipboard = QApplication.clipboard()
     clipboard.clear()
     clipboard.setMimeData( mimedata )
-    Message_Log( "COPY IMAGE", f"{ url }" )
+    Message_Log( "IMAGE to CLIPBOARD", f"{ url }" )
 def File_Move_Trash( lista ):
     # Variable
     ki = Krita.instance()
@@ -402,6 +404,7 @@ def File_Move_Trash( lista ):
     s1 = 100
     s2 = 200
     half = 0.5
+    len_lista = len( lista )
     # Cycle
     for url in lista:
         if ask == True:
@@ -426,7 +429,9 @@ def File_Move_Trash( lista ):
             # Message Box
             qmessage_box = QMessageBox()
             qmessage_box.setText( message )
-            qmessage_box.setStandardButtons( QMessageBox.YesToAll | QMessageBox.Yes | QMessageBox.No | QMessageBox.Abort )
+            if len_lista == 1:  buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Abort
+            elif len_lista > 1: buttons = QMessageBox.YesToAll | QMessageBox.Yes | QMessageBox.No | QMessageBox.Abort
+            qmessage_box.setStandardButtons( buttons )
             qmessage_box.setIconPixmap( qpixmap )
             answer = qmessage_box.exec()
         else:
@@ -755,6 +760,114 @@ def Color_LUT_to_Image( pigmento_sampler, list_url ):
     else:
         Message_Log( "ERROR", "Pigment.O Sampler not accessible" )
 
+# Overlay Information
+def Overlay_Text( self, url ):
+    # Variables
+    text = ""
+    # Checks
+    if url != None:
+        # Checks
+        check_dir = os.path.isdir( url )
+        check_file = os.path.isfile( url )
+        dirname = os.path.dirname( url )
+        basename = os.path.basename( url )
+        # Paths
+        try:
+            if check_dir == True:
+                text += f"Directory : { dirname }"
+                text += f"\nName : { basename }"
+            if check_file:
+                split = basename.split(".")
+                info_name = split[0]
+                info_ext = split[1].upper()
+                text += f"Directory : { dirname }"
+                text += f"\nName : { info_name } [ { info_ext } ]"
+        except:pass
+        # Time
+        try:
+            mod_time = os.path.getmtime( url )
+            local_time = time.localtime( mod_time )
+            info_time = time.strftime( f"%Y-%m[%b]-%d[%a] %H:%M:%S", local_time )
+            text += f"\nTime : { info_time }"
+        except:pass
+        # Size
+        try:
+            if check_file == True:
+                b = os.path.getsize( url )
+                kb = b / 1000
+                mb = kb / 1000
+                if 1 <= kb < 1000:
+                    info_size = kb
+                    info_scale = "Kb"
+                elif 1 <= mb < 1000:
+                    info_size = mb
+                    info_scale = "Mb"
+                else:
+                    info_size = b
+                    info_scale = "b"
+                text += f"\nSize : { round( info_size, 3 ) } { info_scale }"
+        except:pass
+        # Type
+        try:
+            if check_file == True:
+                text += f"\nType : { self.preview_format } { self.preview_image_format } { self.preview_color_name } { self.preview_dpr }dpr"
+        except:pass
+        # Dimensions
+        try:
+            if check_file == True:
+                text += f"\nDimension : { self.preview_width } x { self.preview_height } px"
+        except:pass
+        # Preview Control
+        try:
+            if self.preview_state == "ANIM" and self.anim_count > 0:
+                text += f"\nAnimation : { self.anim_frame }:{ self.anim_count }"
+            if self.preview_state == "COMP" and self.comp_count > 0:
+                text += f"\nCompressed : { self.comp_index }:{ self.comp_count } : { self.comp_path[self.comp_index] }"
+        except:pass
+        # Meta Data
+        try:
+            for md in self.preview_text:
+                text += f"\n{ md[0] } : { md[1] }"
+        except:pass
+    else:
+        pass
+    # Return
+    return text
+def Overlay_Slide( self, ey, limit ):
+    lim = self.hh - limit
+    mid = int( self.hh - limit * 0.5 )
+    if lim <= self.oy <= self.hh:
+        if   ey < lim:      self.state_information = True
+        elif ey > self.hh:  self.state_information = False
+def Overlay_Painter( self, painter, text, limit ):
+    # Colors
+    cor = QColor( self.c_dark.name() )
+    cor.setAlpha( 200 )
+    # Bounding Box
+    rr = 8
+    ss = 20
+    m = 10
+    m2 = 2 * m
+    m4 = 4 * m
+    pw = self.ww - ss * 2
+    ph = limit
+    px = ss
+    py = self.hh - ph
+    box_sqr = QRect( int( px ), int( py ), int( pw ), int( ph+rr ) )
+    box_txt = QRect( int( px+m2 ), int( py+m ), int( pw-m4 ), int( ph ) )
+    # Highlight
+    painter.setPen( QtCore.Qt.NoPen )
+    painter.setBrush( QBrush( cor ) )
+    painter.drawRoundedRect( box_sqr, rr, rr )
+    # String
+    painter.setBrush( QtCore.Qt.NoBrush )
+    painter.setPen( QPen( self.c_text, 1, Qt.SolidLine ) )
+    qfont = QFont( "Consolas", 10 )
+    painter.setFont( qfont )
+    painter.drawText( box_txt, Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap, text )
+    # Garbage
+    del qfont
+
 #endregion
 #region Panels
 
@@ -822,6 +935,8 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
         self.preview_image_format = None
         self.preview_text = None
         self.preview_dpr = None
+        self.preview_width = 0
+        self.preview_height = 0
         # Animation
         self.anim_sequence = list() # list of qpixmaps
         self.anim_frame = 0
@@ -838,8 +953,6 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
         # Grid Lines
         self.gridline_x = 3
         self.gridline_y = 3
-        # Information
-        self.info_edge = 160
 
         # Colors
         self.c_lite = QColor( "#ffffff" )
@@ -880,6 +993,9 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
         self.draw_py = 0
         self.draw_width = 1
         self.draw_height = 1
+
+        # Overlay
+        self.preview_info = 150
 
         # System
         self.insert_original_size = False
@@ -1014,10 +1130,12 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
                 self.comp_archive = zipfile.ZipFile( preview_url, "r" )
                 name_list = self.comp_archive.namelist()
                 for name in name_list:
-                    basename = os.path.basename( name )
-                    extension = basename.split( "." )[-1]
-                    if extension in file_search:
-                        comp_path.append( name )
+                    try:
+                        basename = os.path.basename( name )
+                        extension = basename.split( "." )[-1]
+                        if extension in file_search:
+                            comp_path.append( name )
+                    except:pass
                 # Com Variables
                 if len( comp_path ) > 0:
                     # Krita Cover Image
@@ -1047,6 +1165,10 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
                 self.PREVIEW_PC_MAX.emit( 1 )
             # Variables
             self.preview_qpixmap = qpixmap
+            if qpixmap != None:
+                self.preview_dpr = qpixmap.devicePixelRatio()
+                self.preview_width = qpixmap.width()
+                self.preview_height = qpixmap.height()
 
             # Activate
             if preview_state == "ANIM" and self.anim_count > 0:
@@ -1219,6 +1341,7 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
         Icon_Cursor( self.state_pickcolor, self.state_press )
 
         # Variables
+        check_metadata = len( self.preview_text ) > 0
         check_insert = Check_Insert()
         check_vector = Check_Vector( self.preview_url )
         ppp = self.preview_url == None or self.preview_qpixmap == None
@@ -1253,8 +1376,9 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
         # File Single
         menu_file = qmenu.addMenu( "File" )
         action_file_location = menu_file.addAction( "Open Location" )
+        action_file_image = menu_file.addAction( "Copy Image" )
         action_file_copy = menu_file.addAction( "Copy Path" )
-        action_file_data = menu_file.addAction( "Copy Image" )
+        action_file_xml = menu_file.addAction( "Copy Metadata" )
         menu_file.addSeparator()
         action_file_trash = menu_file.addAction( "Trash" )
         # File Animation
@@ -1290,7 +1414,7 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
 
         # Check Preview
         action_preview_original.setCheckable( True );       action_preview_original.setChecked( self.state_original )
-        action_clip_image.setCheckable( True );             action_clip_image.setChecked( self.state_clip )
+        action_clip_image.setCheckable( True );             action_clip_image.setChecked( check_metadata )
         # Check Edit
         action_edit_greyscale.setCheckable( True );         action_edit_greyscale.setChecked( self.edit_greyscale )
         action_edit_invert_x.setCheckable( True );          action_edit_invert_x.setChecked( self.edit_invert_x )
@@ -1313,6 +1437,8 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
             action_pin_reference.setEnabled( False )
         if check_vector == True:
             action_clip_image.setEnabled( False )
+        if check_metadata == False:
+            action_file_xml.setEnabled( False )
         if self.pigmento_picker == None: 
             action_color_analyse.setEnabled( False )
         if self.pigmento_sampler == None: 
@@ -1341,10 +1467,12 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
         # File
         if action == action_file_location:
             File_Open_Location( self.preview_url )
+        if action == action_file_image:
+            File_Copy_Image( self.preview_url )
         if action == action_file_copy:
             File_Copy_Path( self.preview_url )
-        if action == action_file_data:
-            File_Copy_Image( self.preview_url )
+        if action == action_file_xml:
+            File_Copy_Text( str( self.preview_text ) )
         if action == action_file_trash:
             File_Move_Trash( [ self.preview_url ] )
             self.PREVIEW_UPDATE.emit()
@@ -1385,6 +1513,7 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
             self.PREVIEW_FULL_SCREEN.emit( not self.state_maximized )
 
         #endregion
+
     # Clip
     def Clip_Reset( self ):
         self.state_clip = False
@@ -1467,93 +1596,6 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
             "cw": self.clip_w,
             "ch": self.clip_h,
             }
-    # Overlay
-    def Overlay_Information( self ):
-        # Variables
-        text = ""
-        url = self.preview_url
-        # Checks
-        if url != None:
-            # Checks
-            check_dir = os.path.isdir( url )
-            check_file = os.path.isfile( url )
-            dirname = os.path.dirname( url )
-            basename = os.path.basename( url )
-            # Paths
-            try:
-                if check_dir:
-                    text += f"Directory : { dirname }"
-                    text += f"\nName : { basename }"
-                if check_file:
-                    split = basename.split(".")
-                    info_name = split[0]
-                    info_ext = split[1].upper()
-                    text += f"Directory : { dirname }"
-                    text += f"\nName : { info_name } [ { info_ext } ]"
-            except:pass
-            # Time
-            try:
-                mod_time = os.path.getmtime( url )
-                local_time = time.localtime( mod_time )
-                info_time = time.strftime( f"%Y-%m[%b]-%d[%a] %H:%M:%S", local_time )
-                text += f"\nTime : { info_time }"
-            except:pass
-            # Size
-            try:
-                if check_file:
-                    b = os.path.getsize( url )
-                    kb = b / 1000
-                    mb = kb / 1000
-                    if 1 <= kb < 1000:
-                        info_size = kb
-                        info_scale = "Kb"
-                    elif 1 <= mb < 1000:
-                        info_size = mb
-                        info_scale = "Mb"
-                    else:
-                        info_size = b
-                        info_scale = "b"
-                    text += f"\nSize : { round( info_size, 3 ) } { info_scale }"
-            except:pass
-            # Type
-            try:
-                if check_file:
-                    pf = self.preview_format
-                    pif = self.preview_image_format
-                    pn = self.preview_color_name
-                    text += f"\nType : { pf } { pif } { pn }"
-            except:pass
-            # Dimensions
-            try:
-                if check_file:
-                    info_width = self.preview_qpixmap.width()
-                    info_height = self.preview_qpixmap.height()
-                    info_dpr = self.preview_qpixmap.devicePixelRatio()
-                    text += f"\nDimension : { info_width } x { info_height } px  { info_dpr } dpr"
-            except:pass
-            # Preview Control
-            try:
-                if self.preview_state == "ANIM" and self.anim_count > 0:
-                    text += f"\nAnimation : { self.anim_frame }:{ self.anim_count }"
-                if self.preview_state == "COMP" and self.comp_count > 0:
-                    text += f"\nCompressed : { self.comp_index }:{ self.comp_count } : { self.comp_path[self.comp_index] }"
-            except:pass
-            # Meta Data
-            try:
-                text += "\n"
-                for md in self.preview_text:
-                    text += f"\n{ md[0] } : { md[1] }"
-            except:pass
-        else:
-            pass
-        # Return
-        return text
-    def Overlay_Slide( self, ex, ey ):
-        lim = self.hh - self.info_edge
-        mid = int( self.hh - self.info_edge * 0.5 )
-        if lim <= self.oy <= self.hh:
-            if ey < lim:        self.state_information = True
-            elif ey > self.hh:  self.state_information = False
 
     # Animation
     def Anim_Export_One( self ):
@@ -1734,7 +1776,7 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
         self.ey = ey
         # Neutral
         if self.operation == "information":
-            self.Overlay_Slide( ex, ey )
+            Overlay_Slide( self, ey, self.preview_info )
         if ( self.operation == "color_picker" and self.anim_play == False ):
             ColorPicker_Event( self, ex, ey, self.qimage_grab, True )
         if self.operation == "clip":
@@ -1871,35 +1913,8 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
 
         # Information
         if self.state_information == True:
-            # Variables
-            cor = QColor( self.c_dark.name() )
-            cor.setAlpha( 200 )
-            text = self.Overlay_Information()
-
-            # Bounding Box
-            rr = 8
-            ss = 20
-            m = 10
-            m2 = 2 * m
-            m4 = 4 * m
-            pw = ww - ss * 2
-            ph = self.info_edge
-            px = ss
-            py = hh - ph
-            box_sqr = QRect( int( px ), int( py ), int( pw ), int( ph+rr ) )
-            box_txt = QRect( int( px+m2 ), int( py+m ), int( pw-m4 ), int( ph ) )
-            # Highlight
-            painter.setPen( QtCore.Qt.NoPen )
-            painter.setBrush( QBrush( cor ) )
-            painter.drawRoundedRect( box_sqr, rr, rr )
-            # String
-            painter.setBrush( QtCore.Qt.NoBrush )
-            painter.setPen( QPen( self.c_text, 1, Qt.SolidLine ) )
-            qfont = QFont( "Consolas", 10 )
-            painter.setFont( qfont )
-            painter.drawText( box_txt, Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap, text )
-            # Garbage
-            del qfont
+            text = Overlay_Text( self, self.preview_url )
+            Overlay_Painter( self, painter, text, self.preview_info )
 
         # Display Color Picker
         if ( self.operation == "color_picker" and self.anim_play == False ):
@@ -1908,6 +1923,9 @@ class ImagineBoard_Preview( QtWidgets.QWidget ):
         # Drag and Drop Triangle
         if ( self.drop == True and self.drag == False ):
             Painter_Triangle( painter, w2, h2, side, self.c_chrome )
+        
+        # Painter
+        painter.end()
     def Draw_Render( self, painter, draw, dir_thumb ):
         # Variables
         px = 0
@@ -2125,6 +2143,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         self.state_press = False
         self.state_pickcolor = False
         self.state_fit = False # Controller of grid_fit
+        self.state_information = False
         # Interaction
         self.operation = None
 
@@ -2132,7 +2151,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         self.grid_thumb = 200 # Grid Size
         self.grid_precache = 200 # Mb
         self.grid_clean = 0
-        self.grid_geometry = list()
+        self.grid_construct = list()
         self.grid_method = Qt.SmoothTransformation
         self.grid_state = None # None "FILE" "ANIM" "COMP" "DIR" "WEB"
         # Grid Unit
@@ -2165,6 +2184,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         self.c_lite = QColor( "#ffffff" )
         self.c_dark = QColor( "#000000" )
         self.c_chrome = QColor( "#3daee9" )
+        self.c_text = QColor( "#ffffff" )
         self.c_select = QColor( "#2980b9" )
         self.c_folder = QColor( "#000000" )
         # Color Picker
@@ -2182,6 +2202,9 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         self.qpixmap_comp, self.comp_size = None, 0
         self.qpixmap_dir,  self.dir_size  = None, 0
 
+        # Overlay
+        self.grid_info = 100
+
         # Drag and Drop
         self.setAcceptDrops( True )
         self.drop = False
@@ -2194,11 +2217,12 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
     def Set_Pigment_O( self, pigmento_picker, pigmento_sampler ):
         self.pigmento_picker = pigmento_picker
         self.pigmento_sampler = pigmento_sampler
-    def Set_Theme( self, c_lite, c_dark, c_chrome, c_select, c_folder ):
+    def Set_Theme( self, c_lite, c_dark, c_chrome, c_text, c_select, c_folder ):
         # Colors
         self.c_lite = QColor( c_lite )
         self.c_dark = QColor( c_dark )
         self.c_chrome = QColor( c_chrome )
+        self.c_text = QColor( c_text )
         self.c_select = QColor( c_select )
         self.c_folder = QColor( c_folder )
         # Update
@@ -2275,17 +2299,14 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         self.list_url = list()
         self.list_qpixmap = list()
         self.list_size = list()
-        self.list_index = 0
-        self.list_start = 0
-        self.list_end = 0
-        self.list_geo_end = 0
         # Update
+        self.Grid_Geometry( self.ww, self.hh, self.grid_thumb )
         self.update()
         self.Camera_Grab()
     # Grid Operators
     def Grid_Geometry( self, ww, hh, grid_thumb ):
         # Variables
-        grid_geometry = list()
+        grid_construct = list()
         try:
             # Variables
             px = [0]
@@ -2297,8 +2318,8 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
             gty = grid_thumb
             lx = Limit_Range( ww / gtx, 0, ww )
             ly = Limit_Range( hh / gty, 0, hh )
-            ux = Limit_Mini( int( lx ), 1 )
-            uy = Limit_Mini( int( ly ), 1 )
+            ux = max( int( lx ), 1 )
+            uy = max( int( ly ), 1 )
             # Variables
             self.gux = ux
             self.guy = uy
@@ -2317,10 +2338,10 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
             self.gtw = int( max( pw ) )
             self.gth = int( max( ph ) )
             # Geometry Construct
-            grid_geometry = [ [ None for _ in range( ux ) ] for _ in range( uy ) ]
+            grid_construct = [ [ None for _ in range( ux ) ] for _ in range( uy ) ]
             for y in range( 0, uy ):
                 for x in range( 0, ux ):
-                    try:grid_geometry[y][x] = ( px[x], py[y], pw[x], ph[y] )
+                    try:grid_construct[y][x] = ( px[x], py[y], pw[x], ph[y] )
                     except:pass
 
             # Display Range
@@ -2337,7 +2358,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
             self.gtw = 1
             self.gth = 1
         # Return
-        self.grid_geometry = grid_geometry
+        self.grid_construct = grid_construct
     def Grid_Image( self, update ):
         # Icons
         if update == True:
@@ -2360,7 +2381,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         gix = None
         giy = None
         for x in range( 0, self.gux ):
-            item = self.grid_geometry[0][x]
+            item = self.grid_construct[0][x]
             px = item[0]
             pw = item[2]
             cx = px <= ex <= px+pw
@@ -2368,7 +2389,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
                 gix = x
                 break
         for y in range( 0, self.guy ):
-            item = self.grid_geometry[y][0]
+            item = self.grid_construct[y][0]
             py = item[1]
             ph = item[3]
             cy = py <= ey <= py+ph
@@ -2379,9 +2400,10 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
             # Variables
             self.gix = gix
             self.giy = giy
+            lim_max = max( 0, len( self.list_url )-1 )
             # Calculations
             self.list_geo_index = self.list_start + gix + giy * self.gux
-            self.list_index = Limit_Range( self.list_geo_index, 0, len( self.list_url )-1 )
+            self.list_index = Limit_Range( self.list_geo_index, 0, lim_max )
             # Signal
             self.GRID_INDEX.emit( self.list_index )
     def Grid_Increment( self, increment ):
@@ -2409,13 +2431,12 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         if select == True:
             self.list_select = [ False ] * self.list_count
     def List_Index( self, list_index ):
-        # Variables
         li = int( list_index / self.gux )
         gi = int( li * self.gux )
-        if list_index <= self.list_start:
-            self.list_start = gi
+        if list_index < self.list_start:
+            self.list_start = max( 0, gi )
             self.list_geo_end = self.list_start + self.guc
-        if list_index >= self.list_geo_end:
+        elif list_index >= self.list_geo_end:
             self.list_geo_end = gi + self.gux
             self.list_start = self.list_geo_end - self.guc
         self.list_end = min( self.list_geo_end, self.list_count )
@@ -2648,8 +2669,8 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         # File
         menu_file = qmenu.addMenu( "File" )
         action_file_location = menu_file.addAction( "Open Location" )
+        action_file_image = menu_file.addAction( "Copy Image" )
         action_file_path = menu_file.addAction( "Copy Path" )
-        action_file_data = menu_file.addAction( "Copy Image" )
         menu_file.addSeparator()
         action_file_trash = menu_file.addAction( "Trash" )
         # Color
@@ -2699,7 +2720,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
             action = qmenu.exec_( self.mapToGlobal( event.pos() ) )
             # General
             if action == action_pin_reference:
-                self.GRID_PIN_INSERT.emit( "image", self.w2, self.h2, None, url, clip_false )
+                self.Selection_PinInsert( list_url )
             # Grid
             if action == action_grid_fit:
                 self.Grid_Fit( not self.state_fit )
@@ -2720,10 +2741,10 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
             # File
             if action == action_file_location:
                 File_Open_Location( url )
+            if action == action_file_image:
+                File_Copy_Image( url )
             if action == action_file_path:
                 File_Copy_Path( url )
-            if action == action_file_data:
-                File_Copy_Image( url )
             if action == action_file_trash:
                 File_Move_Trash( list_url )
                 self.GRID_UPDATE.emit()
@@ -2806,6 +2827,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         # Neutral
         if self.operation == "neutral_press":
             self.Grid_Index( ex, ey )
+            Overlay_Slide( self, ey, self.grid_info )
         if self.operation == "color_picker":
             ColorPicker_Event( self, ex, ey, self.qimage_grab, True )
         # Camera
@@ -2864,17 +2886,19 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         self.Grid_Index( ex, ey )
         self.list_select[ self.list_index ] = False
     def Selection_All( self ):
-        for i in range( 0, len( self.list_select ) ):
-            self.list_select[i] = True
+        self.list_select = [True] * len( self.list_select )
     def Selection_Clear( self ):
-        for i in range( 0, len( self.list_select ) ):
-            self.list_select[i] = False
+        self.list_select = [False] * len( self.list_select )
     def Selection_List( self ):
         selection_list = list()
         for i in range( 0, len( self.list_url ) ):
             if self.list_select[i] == True:
                 selection_list.append( self.list_url[i] )
         return selection_list
+    def Selection_PinInsert( self, list_url ):
+        for url in list_url:
+            self.GRID_PIN_INSERT.emit( "image", self.w2, self.h2, None, url, clip_false )
+        self.Selection_Clear()
 
     # Wheel Event
     def wheelEvent( self, event ):
@@ -2957,7 +2981,6 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         h2 = self.h2
         side = min( ww, hh )
         thumb = min( self.gtw, self.gth )
-        state_null = self.list_qpixmap == list()
 
         # Painter
         painter = QPainter( self )
@@ -2972,7 +2995,7 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
 
                 # Geometry
                 try:
-                    geo = self.grid_geometry[y][x]
+                    geo = self.grid_construct[y][x]
                     px = geo[0]
                     py = geo[1]
                     pw = geo[2]
@@ -3035,6 +3058,14 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         # Clean Mask
         painter.setClipping( False )
 
+        # Information
+        if self.state_information == True:
+            try:
+                text = Overlay_Text( self, self.list_url[ self.list_index ] )
+                Overlay_Painter( self, painter, text, self.grid_info )
+            except Exception as e:
+                pass
+
         # Display Color Picker
         if self.operation == "color_picker":
             ColorPicker_Render( self, painter, self.ex, self.ey )
@@ -3042,6 +3073,9 @@ class ImagineBoard_Grid( QtWidgets.QWidget ):
         # Drag and Drop Triangle
         if ( self.drop == True and self.drag == False ):
             Painter_Triangle( painter, w2, h2, side, self.c_chrome )
+
+        # Painter
+        painter.end()
     def Draw_QPixmap( self, painter, qpixmap, px, py, pw, ph ):
         ox = ( pw - qpixmap.width() ) * 0.5
         oy = ( ph - qpixmap.height() ) * 0.5
@@ -4784,8 +4818,8 @@ class ImagineBoard_Reference( QtWidgets.QWidget ):
         # File
         menu_file = menu_pin.addMenu( "File" )
         action_file_location    = menu_file.addAction( "Open Location" )
+        action_file_image        = menu_file.addAction( "Copy Image" )
         action_file_copy        = menu_file.addAction( "Copy Path" )
-        action_file_data        = menu_file.addAction( "Copy Image" )
         # Color
         menu_color = menu_pin.addMenu( "Color" )
         action_color_analyse    = menu_color.addAction( "Color Analyse" )
@@ -4926,10 +4960,10 @@ class ImagineBoard_Reference( QtWidgets.QWidget ):
         # File
         if action == action_file_location:
             File_Open_Location( pin_url )
+        if action == action_file_image:
+            File_Copy_Image( pin_url )
         if action == action_file_copy:
             File_Copy_Path( pin_url )
-        if action == action_file_data:
-            File_Copy_Image( pin_url )
         # Color
         if action == action_color_analyse:
             qimage = pin_qpixmap.toImage()
@@ -6126,6 +6160,9 @@ class ImagineBoard_Reference( QtWidgets.QWidget ):
             # # Garbage
             # del qfont
         """
+
+        # Painter
+        painter.end()
 
 #endregion
 #region Threads

@@ -124,6 +124,7 @@ merged_png = "mergedimage.png" # KRA KRZ ORA
 preview_png = "preview.png" # Bundle
 metadata_key = "Keywords"
 invalid = [ "", ".", "..", " ", None ]
+
 color_white = QColor( "#ffffff" )
 color_gray = QColor( "#7f7f7f" )
 color_black = QColor( "#000000" )

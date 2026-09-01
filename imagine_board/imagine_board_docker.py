@@ -890,7 +890,7 @@ class ImagineBoard_Docker( DockWidget ):
 
         # Modules
         self.panel_preview.Set_Theme( w_light, w_window, c_highlight, t_button )
-        self.panel_grid.Set_Theme( w_light, w_window, c_highlight, c_link, folder )
+        self.panel_grid.Set_Theme( w_light, w_window, c_highlight, t_button, c_link, folder )
         self.panel_reference.Set_Theme( w_light, w_window, c_highlight, c_link )
 
         # Layout
@@ -1373,7 +1373,7 @@ class ImagineBoard_Docker( DockWidget ):
             else:
                 # Menu
                 qmenu = QMenu( self )
-                qmenu.setMinimumWidth( 7 * len( self.folder_url ) )
+                qmenu.setMinimumWidth( 8 * len( self.folder_url ) )
                 # Title
                 qmenu.addSection( self.folder_url )
                 # Parent Dir
@@ -1425,9 +1425,10 @@ class ImagineBoard_Docker( DockWidget ):
                 # Variables
                 self.folder_url = folder_url
                 self.preview_slideshow_list.clear()
-                # UI
                 string = f"Folder : { os.path.basename( self.folder_url ) }"
+                # UI
                 self.layout.folder.setToolTip( string )
+                self.dialog.directory_recursive.setChecked( False )
                 # Operation
                 self.Filter_Files( self.search_string, file_name, file_index )
                 self.Folder_Shift( folder_url )
@@ -2368,7 +2369,7 @@ class ImagineBoard_Docker( DockWidget ):
         check_bookmark = self.folder_url in self.bookmark_list
         # QMenu
         qmenu = QMenu( self )
-        qmenu.setMinimumWidth( 7 * len( self.folder_url ) )
+        qmenu.setMinimumWidth( 8 * len( self.folder_url ) )
         # Title
         qmenu.addSection( self.folder_url )
         # Actions
@@ -2971,9 +2972,10 @@ class ImagineBoard_Docker( DockWidget ):
             destination_url = os.path.normpath( os.path.join( directory, source_basename ) )
             destination_basename = os.path.basename( destination_url )
             check_exist = os.path.exists( destination_url )
+            check_distinct = source_url != destination_url
             # File
             qfile = QFile( source_url )
-            if check_exist == True:
+            if check_distinct == True and check_exist == True:
                 # Pixmaps
                 qis = QPixmap( source_url ).scaled( 200, 200, Qt.KeepAspectRatio, Qt.FastTransformation )
                 qid = QPixmap( destination_url ).scaled( 200, 200, Qt.KeepAspectRatio, Qt.FastTransformation )
@@ -3005,7 +3007,7 @@ class ImagineBoard_Docker( DockWidget ):
                     self.Drive_Transfer( qfile, destination_url )
                 if answer == QMessageBox.Discard:
                     qfile.moveToTrash()
-            else:
+            elif check_distinct == True and check_exist == False:
                 self.Drive_Transfer( qfile, destination_url )
             del qfile
         # Refresh
@@ -3963,13 +3965,9 @@ ToDo:
 - Reference Rebase does not Repalce images
 
 New:
-- Trash files
-- Drive text formating
-- Drive can:
-    - Rename Files/Folders
-    - Create Folders
-    - Trash Files/Folders
-- removed +1 from index when moving files becauase how index is handled when finding files
-- swapped vertical input to Preview Ctrl+LMB hold pagination
-- Bookmark tweaks on menu
+- Recursive uncheck when a folder changes ( to not crash on big folders suddenly )
+- Grid overlay for files information and general tweaks
+- Copy Metadata to clipboard with preview mode
+- when deleting "YesAll" only appears with multiple files on the list
+- Fixed the Grid display when loading parent ( showing repeated files from the end of the list )
 """
